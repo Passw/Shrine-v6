@@ -8,6 +8,8 @@
 #define VSYSCALL_FREAD      8
 #define VSYSCALL_READ       9
 #define VSYSCALL_ADDSYM     10
+#define VSYSCALL_FWRITE     11
+#define VSYSCALL_EXIT       12
 
 // neutralize CLI instructions
 #define CLI

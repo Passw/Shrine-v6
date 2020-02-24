@@ -60,6 +60,9 @@ Bool Cd(U8 *dirname=NULL,Bool make_dirs=FALSE)
 	case FSt_FAT32:
 	  res=FAT32Cd(buf,cur_dir_clus);
 	  break;
+	case FSt_HOSTFS:
+	  res=HostFsCd(buf,cur_dir_clus);
+	  break;
 	default:
 	  PrintErr("File System Not Supported\n");
 	  res=FALSE;

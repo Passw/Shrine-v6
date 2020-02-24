@@ -252,14 +252,17 @@ U0 VKMain2()
   DbgMode(OFF);
   cnts.time_stamp_freq_initial=TimeCal;
   Cd("/");
-  /*try*/ ExeFile("StartOS"); //Continues $LK,"/StartOS.HC",A="FL:/StartOS.HC,1"$
-  /*catch {
+  try ExeFile("StartOS"); //Continues $LK,"/StartOS.HC",A="FL:/StartOS.HC,1"$
+  catch {
     Raw(ON);
     Silent(OFF);
     GetOutOfDollar;
     PutExcept;
     Dbg;
-  }*/
+  }
+
+  "VKernel start-up finished.\n";
+  VSysCall(VSYSCALL_EXIT, 0, 0, 0);
 
   LBts(&sys_run_level,RLf_ADAM_SERVER);
   SrvTaskCont; //Never to return

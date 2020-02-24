@@ -85,7 +85,7 @@ U0 LoadPass1(U8 *src,U8 *module_base,I64 ld_flags)
 	  tmpex->val=i;
 	else
 	  tmpex->val=i+module_base;
-	VSysCall(VSYSCALL_ADDSYM, st_ptr, tmpex->val, 0);
+	VSysCall(VSYSCALL_ADDSYM, "BIN", st_ptr, tmpex->val);
 	HashAdd(tmpex,Fs->hash_table);
 	SysSymImportsResolve(st_ptr,ld_flags);
 	break;

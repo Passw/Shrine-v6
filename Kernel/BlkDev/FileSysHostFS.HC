@@ -102,3 +102,40 @@ Bool HostFsCd(U8 *name,I64 cur_dir_clus)
     PrintErr("File not found: \"%s\".\n",name);
   return FALSE;
 }
+
+I64 HostFsFileWrite(CDrv *dv,U8 *cur_dir,U8 *name,U8 *buf,I64 size,
+        CDate cdt,I64 attr)
+{
+  CDirEntry de;
+  I64 c=0,blk_cnt;
+  MemSet(&de,0,sizeof(CDirEntry));
+  if (size<0) size=0;
+  if (dv->fs_type!=FSt_HOSTFS)
+    PrintErr("Not HostFS Drv\n");
+  else if (!CFileNameTo(de.name,name))
+    PrintErr("Invalid FileName: \"%s\".\n",name);
+  else {
+    U8* path = MAlloc(StrLen(cur_dir) + 1 + StrLen(de.name) + 1);
+    path[0] = 0;
+    StrCpy(path, cur_dir);
+    CatPrint(path,"/");
+    CatPrint(path,de.name);
+
+    c = VSysCall(VSYSCALL_FWRITE, path, buf, size);
+
+    Free(path);
+  }
+  return c;
+}
+
+CDirEntry *HostFsFilesFind(U8 *files_find_mask,I64 fuf_flags,
+        CDirEntry *parent=NULL)
+{
+  CDrv *dv=Fs->cur_dv;
+  CDirEntry *buf,*buf2,*ptr,*res=NULL,*tmpde;
+  I64 ch,cur_dir_clus;
+  if (fuf_flags&~FUG_FILES_FIND)
+    throw('FUF');
+  "STUB HostFsFilesFind(%s, %08X, %08X)\n", files_find_mask, fuf_flags, parent;
+  return res;
+}

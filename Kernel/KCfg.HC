@@ -36,14 +36,14 @@ CDoc *KCfgAddDev(CKCfg *c)
 	"define shortly, enter the drive letter\n"
 	"of the drive with the account directory.\n"
 	"\n($$PURPLE$$<ENTER>$$FG$$ for cur drv) Boot Drv:";
-  ch=Let2Let(GetChar);
+  /*ch=Let2Let(GetChar);
   if ('A'<=ch<='Z')
     c->boot_drv_let=ch;
-  else
+  else*/
     c->boot_drv_let=Drv2Let(Fs->cur_dv);
   "\n\n$$BK,1$$$$PURPLE$$Mount drives so they will be present when "
 	"you boot.$$FG$$$$BK,0$$\n";
-  Mount2(c->boot_drv_let,doc,FALSE);
+  //Mount2(c->boot_drv_let,doc,FALSE);
   return doc;
 }
 
@@ -154,12 +154,13 @@ CKCfg *KCfgNew()
 
   c->add_dev=KCfgAddDev(c);
   c->home_dir=StrNew("::/Home");
-  c->dsk_cache_size_exp=GetStr(
+  c->dsk_cache_size_exp=/*GetStr(
 	"Disk Cache Size in Bytes,\n"
 	"gets rounded-up funny,\n"
-	"($$PURPLE$$<ENTER>$$FG$$ will use default.):",
+	"($$PURPLE$$<ENTER>$$FG$$ will use default.):",*/
+    StrNew(
 	"Scale2Mem(0x80000,0x8000000)");
-  KCfgOptions(c);
+  //KCfgOptions(c);
   return c;
 }
  
