@@ -1,4 +1,5 @@
 #exe {Cd(__DIR__);};
+#include "FileSysHostFSFwd"
 #include "DskStrA"
 #include "DskCache"
 #include "DskATA"
@@ -12,6 +13,7 @@
 #include "DskDirA"
 #include "FileSysRedSea"
 #include "FileSysFAT"
+#include "FileSysHostFS"
 #include "DskDirContext"
 #include "DskFind"
 #include "DskDirB"

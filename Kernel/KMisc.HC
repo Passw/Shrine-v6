@@ -60,6 +60,8 @@ U0 IntCore0TimerHndlr(CTask *)
 
 I64 SysTimerRead()
 {//System timer count with overflow already handled.
+  return 0;   // FIXME
+  /*
   I64 i,res;
   PUSHFD
   CLI
@@ -75,6 +77,7 @@ I64 SysTimerRead()
   LBtr(&sys_semas[SEMA_SYS_TIMER],0);
   POPFD
   return res;
+  */
 }
 
 I64 HPET()
@@ -135,6 +138,8 @@ Bool Blink(F64 Hz=2.5)
 
 U0 Busy(I64 ÊS)
 {//Loosely timed.
+  VSysCall(VSYSCALL_USLEEP, ÊS, 0, 0);
+  /*
   I64 i;
   if (cnts.HPET_freq) {
     i=HPET+cnts.HPET_freq*ÊS/1000000;
@@ -142,6 +147,7 @@ U0 Busy(I64 ÊS)
   } else
     for (i=0;i<ÊS;i++)
       PortNop;
+  */
 }
 
 U0 SleepUntil(I64 wake_jiffy)
@@ -224,6 +230,7 @@ Bool ScrnCast(Bool val=ON,Bool just_audio=FALSE,U8 *print_fmt="B:/Tmp/%X.GR")
 
 U0 SndRst()
 {//Fix stuck sound.
+  /*
   if (Bt(&sys_semas[SEMA_SND],0)) {
     Sleep(1);
     if (Bt(&sys_semas[SEMA_SND],0)) {
@@ -232,6 +239,7 @@ U0 SndRst()
     }
   }
   Snd;
+  */
 }
 
 U0 Beep(I8 ona=62,Bool busy=FALSE)

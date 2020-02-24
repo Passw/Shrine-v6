@@ -159,6 +159,13 @@ I64 BlkDevAdd(CBlkDev *bd,I64 prt_num=I64_MIN,
       dv->fs_type=FSt_ISO9660; //Start with this
       dv->size=0;
       break;
+    case BDT_HOSTFS:
+      dv->dv_signature=DRV_SIGNATURE_VAL;
+      dv->prt_num=num;
+      dv->fs_type=FSt_HOSTFS;
+      dv->size=0; // ????
+      res++;
+      break;
   }
   if (res)
     BlkDevLockFwdingSet(bd);
@@ -237,4 +244,17 @@ U0 BlkDevsInitAll()
     StreamDoc(kernel_cfg->add_dev);
     StreamPrint("#exe {Option(OPTf_WARN_PAREN,ON);}");
   };
+}
+
+U0 BlkDevsInitHostFS()
+{
+  CBlkDev *bd;
+  I64 i;
+  blkdev.blkdevs=CAlloc(sizeof(CBlkDev)*BLKDEVS_NUM);
+  blkdev.drvs=CAlloc(sizeof(CDrv)*DRVS_NUM);
+  for (i=0;i<DRVS_NUM;i++)
+    blkdev.let_to_drv[i]=&blkdev.drvs[i];
+
+  bd=BlkDevNextFreeSlot(blkdev.first_hd_drv_let,BDT_HOSTFS);
+  BlkDevAdd(bd,,FALSE,FALSE);
 }

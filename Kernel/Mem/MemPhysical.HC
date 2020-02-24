@@ -150,20 +150,7 @@ U0 UncachedAliasAlloc() //Make uncached alias for 4 lowest Gig.
 
 I64 BIOSTotalMem()
 {
-  I64 r01,r20;
-  U16		*m01=MEM_E801;
-  CMemE820	*m20=MEM_E820;
-
-  r01=0x100000+m01[0]<<10+m01[1]<<16;
-  r20=0;
-  if (m20->type) {
-    while (m20->type) {
-      if (m20->type==1)
-	r20+=m20->len;
-      m20++;
-    }
-  }
-  return MaxI64(r01,r20);
+  return SYS_16MEG_AREA_LIMIT + VSysCall(VSYSCALL_MEMSIZE, 0, 0, 0);
 }
 
 I64 Scale2Mem(I64 min,I64 max,I64 limit=2*1024*1024*1024)

@@ -6,6 +6,7 @@ the normal scrn text output routine.
 
 See also $LK,"GrUpdateScrn",A="MN:GrUpdateScrn"$().
 */
+  /*
   I64 i,row,col;
   U8 *ptr,*ptr1,*ptr2;
 
@@ -83,6 +84,8 @@ See also $LK,"GrUpdateScrn",A="MN:GrUpdateScrn"$().
     }
     text.raw_col++;
   }
+  */
+  VSysCall(VSYSCALL_PUTCHAR, ch, 0, 0);
 }
 
 U0 VGAFlush()

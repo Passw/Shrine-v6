@@ -15,6 +15,8 @@ Bool ChkPtr(U8 *ptr)
 
 Bool ChkCodePtr(U8 *ptr)
 {//Check if addr is valid code addr.
+  return mem_heap_base<=ptr<=mem_heap_limit;
+  /*
   if (mem_heap_base<=ptr<=mem_heap_limit) {
     if (*MemPageTable(ptr)&1)
       return TRUE;
@@ -26,6 +28,7 @@ Bool ChkCodePtr(U8 *ptr)
     return TRUE;
   else
     return FALSE;
+  */
 }
 
 Bool ChkOnStk(U8 *ptr,CTask *task=NULL)

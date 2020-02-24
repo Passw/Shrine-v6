@@ -372,7 +372,7 @@ U0 Core0Init()
   if (Bt(&ee.rdx,9)) {
 //Unnecessary?
     //	  SetMSR(IA32_LAPIC_BASE,dev.uncached_alias+LAPIC_BASE+0x900);
-    MPAPICInit;
+    //MPAPICInit;
   }
 }
 
