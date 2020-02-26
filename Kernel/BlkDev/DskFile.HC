@@ -54,6 +54,9 @@ U8 *FileRead(U8 *filename,I64 *_size=NULL,I64 *_attr=NULL)
 	    case FSt_FAT32:
 	      res=FAT32FileRead(dirc->dv,Fs->cur_dir,dirc->mask,&size,&attr);
 	      break;
+	    case FSt_HOSTFS:
+	      res=HostFsFileRead(dirc->dv,Fs->cur_dir,dirc->mask,&size,&attr);
+	      break;
 	    default:
 	      PrintErr("File System Not Supported\n");
 	  }

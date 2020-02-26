@@ -1,3 +1,27 @@
+U0 HostFsDirEntryInit(CDirEntry* de, CHostFsStat* st)
+{
+  // TODO: very confused about these
+  // de->next = de->parent = de->sub = NULL;
+  // de->full_name = NULL;
+  // de->user_data = de->user_data2 = 0;
+
+  de->attr = st->attr;
+  StrCpy(de->name, st->name);   // FIXME: bounds etc
+  de->clus = st->clus;
+  de->size = st->size;
+  de->datetime.date = 0;    // TODO
+  de->datetime.time = 0;    // TODO
+}
+
+// BUG: if dir == "/", there will be duplicate slash. But loader doesn't care.
+U8* HostFsMakeAbsPath(U8* dir, U8* name) {
+  U8* abs_path = MAlloc(StrLen(dir)+1+StrLen(name)+1);
+  StrCpy(abs_path, dir);
+  CatPrint(abs_path, "/");
+  CatPrint(abs_path, name);
+  return abs_path;
+}
+
 Bool HostFsFileFind(CDrv *dv,I64 cur_dir_clus,U8 *name,
         CDirEntry *_res,I64 fuf_flags=0)
 {//$LK,"FUF_JUST_DIRS",A="MN:FUF_JUST_DIRS"$, $LK,"FUF_JUST_FILES",A="MN:FUF_JUST_FILES"$
@@ -21,10 +45,7 @@ Bool HostFsFileFind(CDrv *dv,I64 cur_dir_clus,U8 *name,
     // Build absolute path, if needed
     if (cur_dir_clus) {
       if (VSysCall(VSYSCALL_STATCLUS, cur_dir_clus, &stat, 0) == 0) {
-        abs_path = MAlloc(StrLen(stat.abs_path)+1+StrLen(name)+1);
-        StrCpy(abs_path, stat.abs_path);
-        CatPrint(abs_path, "/");
-        CatPrint(abs_path, name);
+        abs_path = HostFsMakeAbsPath(stat.abs_path, name);
       }
       else {
         PrintErr("Invalid directory");
@@ -32,9 +53,7 @@ Bool HostFsFileFind(CDrv *dv,I64 cur_dir_clus,U8 *name,
       }
     }
     else {
-      abs_path = MAlloc(1+StrLen(name)+1);
-      StrCpy(abs_path, "/");
-      CatPrint(abs_path, name);
+      abs_path = HostFsMakeAbsPath("/", name);
     }
 
     if (abs_path && VSysCall(VSYSCALL_STAT, abs_path, &stat, 0) == 0) {
@@ -103,6 +122,34 @@ Bool HostFsCd(U8 *name,I64 cur_dir_clus)
   return FALSE;
 }
 
+I64 HostFsFilesDel(CDrv *dv,U8 *cur_dir,U8 *files_find_mask,I64 fuf_flags,
+                     Bool del_dir,Bool print_msg)
+{
+  I64 res=0,ch, dirp;
+
+  dirp = VSysCall(VSYSCALL_OPENDIR, Fs->cur_dir, 0, 0);
+
+  if (!dirp)
+    return NULL;
+
+  CHostFsStat st;
+
+  while (VSysCall(VSYSCALL_READDIR, dirp, &st, 0) == 0) {
+    ch=*st.name;
+
+    if (ch!='.' && (del_dir || !(st.attr & RS_ATTR_DIR)) &&
+          FilesFindMatch(st.name,files_find_mask,fuf_flags)) {
+      if (!(st.attr & RS_ATTR_DIR)) res++;
+      if (print_msg)
+        "Del %s\n",st.name;
+      VSysCall(VSYSCALL_UNLINK, st.abs_path, 0, 0);
+    }
+  }
+
+  VSysCall(VSYSCALL_CLOSEDIR, dirp, 0, 0);
+  return res;
+}
+
 I64 HostFsFileWrite(CDrv *dv,U8 *cur_dir,U8 *name,U8 *buf,I64 size,
         CDate cdt,I64 attr)
 {
@@ -133,9 +180,59 @@ CDirEntry *HostFsFilesFind(U8 *files_find_mask,I64 fuf_flags,
 {
   CDrv *dv=Fs->cur_dv;
   CDirEntry *buf,*buf2,*ptr,*res=NULL,*tmpde;
-  I64 ch,cur_dir_clus;
+  I64 cur_dir_clus, dirp;
   if (fuf_flags&~FUG_FILES_FIND)
     throw('FUF');
-  "STUB HostFsFilesFind(%s, %08X, %08X)\n", files_find_mask, fuf_flags, parent;
+
+  dirp = VSysCall(VSYSCALL_OPENDIR, Fs->cur_dir, 0, 0);
+
+  if (!dirp)
+    return NULL;
+
+  CHostFsStat st;
+
+  while (VSysCall(VSYSCALL_READDIR, dirp, &st, 0) == 0) {
+    // alloc a CDirEntry and init it from the stat
+    tmpde = CAlloc(sizeof(CDirEntry));
+    HostFsDirEntryInit(tmpde, &st);
+
+    // link to parent if needed
+    tmpde->parent=parent;
+
+    if (Bt(&fuf_flags,FUf_RECURSE) && tmpde->attr&RS_ATTR_DIR &&
+          *tmpde->name!='.') {
+      // if child directory, recurse into it
+      tmpde->next=res;
+      res=tmpde;
+      tmpde->full_name=DirNameAbs(tmpde->name);
+
+      if (Cd(tmpde->name)) {
+        tmpde->sub=HostFsFilesFind(files_find_mask,fuf_flags,tmpde);
+        Cd("..");
+      }
+    } else {
+      // not recursing...
+      tmpde->full_name=FileNameAbs(tmpde->name);
+      if ((tmpde->attr&RS_ATTR_DIR ||
+            !Bt(&fuf_flags,FUf_JUST_DIRS)) &&
+            !(Bt(&fuf_flags,FUf_RECURSE) && *tmpde->name=='.' &&
+            tmpde->attr&RS_ATTR_DIR) &&
+            FilesFindMatch(tmpde->full_name,files_find_mask,fuf_flags)) {
+        tmpde->next=res;
+        res=tmpde;
+      } else
+        DirEntryDel(tmpde);
+    }
+  }
+
+  VSysCall(VSYSCALL_CLOSEDIR, dirp, 0, 0);
   return res;
+}
+
+Bool HostFsMkDir(CDrv *dv,U8 *cur_dir,U8 *name,I64 entry_cnt)
+{
+  U8* abs_path = HostFsMakeAbsPath(cur_dir, name);
+  Bool ok = (VSysCall(VSYSCALL_MKDIR, abs_path, 0, 0) == 0);
+  Free(abs_path);
+  return ok;
 }

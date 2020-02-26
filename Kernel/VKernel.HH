@@ -10,6 +10,11 @@
 #define VSYSCALL_ADDSYM     10
 #define VSYSCALL_FWRITE     11
 #define VSYSCALL_EXIT       12
+#define VSYSCALL_OPENDIR    13
+#define VSYSCALL_READDIR    14
+#define VSYSCALL_CLOSEDIR   15
+#define VSYSCALL_MKDIR      16
+#define VSYSCALL_UNLINK     17
 
 // neutralize CLI instructions
 #define CLI
@@ -18,6 +23,7 @@ class CHostFsStat {
 	U16 attr, pad[3];
     I64 clus, size;
     U8* abs_path;
+    U8* name;
 };
 
 // TODO: not public

@@ -185,6 +185,9 @@ Bool DirMk(U8 *filename,I64 entry_cnt=0)
 	  case FSt_FAT32:
 	    res=FAT32MkDir(dirc->dv,Fs->cur_dir,name,entry_cnt);
 	    break;
+	  case FSt_HOSTFS:
+	    res=HostFsMkDir(dirc->dv,Fs->cur_dir,name,entry_cnt);
+	    break;
 	  default:
 	    PrintErr("File System Not Supported\n");
 	}

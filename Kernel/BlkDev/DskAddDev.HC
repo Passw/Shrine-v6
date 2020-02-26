@@ -164,6 +164,7 @@ I64 BlkDevAdd(CBlkDev *bd,I64 prt_num=I64_MIN,
       dv->prt_num=num;
       dv->fs_type=FSt_HOSTFS;
       dv->size=0; // ????
+      dv->spc=1;
       res++;
       break;
   }
