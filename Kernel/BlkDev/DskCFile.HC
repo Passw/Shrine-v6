@@ -47,18 +47,29 @@ CFile *FOpen(U8 *filename,U8 *flags,I64 cnt=0)
     f->flags|=FF_NEW_FILE;
     if (dirc=DirContextNew(full_name)) {
       StrCpy(f->de.name,dirc->mask);
-      if (cnt>0) {//We pre-alloc the whole thing.
+      if (cnt>0 && f->dv->fs_type!=FSt_HOSTFS) {//We pre-alloc the whole thing.
 	f->de.clus=ClusAlloc(f->dv,0,
 	      (cnt+f->dv->spc-1)/f->dv->spc,contiguous);
 	f->de.size=cnt<<BLK_SIZE_BITS;
 	DirNew(dirc->dv,Fs->cur_dir,&f->de,TRUE);
 	f->flags&=~FF_NEW_FILE;
       }
+      if (cnt>0 && f->dv->fs_type==FSt_HOSTFS) {
+	// We also pre-alloc the whole thing, IN MEMORY!
+	Free(f->clus_buf);
+	f->clus_buf = MAlloc(cnt<<BLK_SIZE_BITS);
+      }
       DirContextDel(dirc);
       return f;
     }
   } else {
     if (FileFind(full_name,&f->de,FUF_JUST_FILES)) {
+      if (f->dv->fs_type==FSt_HOSTFS) {
+	// HostFS needs to remember full path
+	f->de.full_name = StrNew(full_name);
+	Free(f->clus_buf);
+	f->clus_buf = FileRead(full_name);
+      }
       Free(full_name);
       f->max_blk=(FSize(f)+BLK_SIZE-1)>>BLK_SIZE_BITS-1;
       return f;
@@ -74,6 +85,14 @@ U0 FClose(CFile *f)
 {//Close CFile, updating directory.
   CDirContext *dirc;
   if (f) {
+    if (f->dv->fs_type==FSt_HOSTFS) {
+      if (f->flags & FF_WRITE)
+	FileWrite(f->de.full_name, f->clus_buf, f->de.size);
+      Free(f->clus_buf);
+      Free(f->de.full_name);
+      Free(f);
+      return;
+    }
     if (f->flags & FF_BUF_DIRTY) {
       ClusWrite(f->dv,f->clus_buf,f->clus,1);
       f->flags&=~FF_BUF_DIRTY;
@@ -137,6 +156,17 @@ Bool FBlkRead(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
     return FALSE;
   if (cnt<=0) return TRUE;
 
+  if (dv->fs_type==FSt_HOSTFS) {
+    // nice shit LOL
+    // FIXME eventually
+    // "HostFS FBlkRead(%s at %d x %d)\n", f->de.full_name, blk, cnt;
+    MemCpy(buf,f->clus_buf+blk<<BLK_SIZE_BITS,cnt<<BLK_SIZE_BITS);
+
+    blk+=cnt;
+    f->fblk_num=blk;
+    return TRUE;
+  }
+
   if (f->flags & FF_CONTIGUOUS) {
     BlkRead(dv,buf,Clus2Blk(dv,c)+blk,cnt);
     blk+=cnt;
@@ -190,6 +220,18 @@ Bool FBlkWrite(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
   if (!(f->flags & FF_WRITE))
     return FALSE;
   if (cnt<=0) return TRUE;
+
+  if (dv->fs_type==FSt_HOSTFS) {
+    // nice shit LOL
+    // FIXME eventually
+    // "HostFS FBlkWrite(%s at %d x %d, out of %d)\n", f->de.full_name, blk, cnt, f->max_blk+1;
+    MemCpy(f->clus_buf+blk<<BLK_SIZE_BITS,buf, cnt<<BLK_SIZE_BITS);
+
+    blk+=cnt;
+    f->fblk_num=blk;
+    return TRUE;
+  }
+
   if (f->flags & FF_CONTIGUOUS) {
     BlkWrite(dv,buf,Clus2Blk(dv,c)+blk,cnt);
     blk+=cnt;

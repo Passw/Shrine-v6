@@ -48,7 +48,7 @@ Bool HostFsFileFind(CDrv *dv,I64 cur_dir_clus,U8 *name,
         abs_path = HostFsMakeAbsPath(stat.abs_path, name);
       }
       else {
-        PrintErr("Invalid directory");
+        PrintErr("Invalid directory (clus %d)", cur_dir_clus);
         abs_path = 0;
       }
     }
