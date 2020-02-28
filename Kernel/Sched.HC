@@ -135,14 +135,17 @@ _TASK_CONTEXT_RESTORE::
 	POP	R15
 	MOV	RSP,RAX
 
-	MOV	RAX,U64 CTask.rax[RSI]
-	PUSH	CGDT.ds
-	PUSH	U64 CTask.rsp[RSI]
-	PUSH	U64 CTask.rflags[RSI]
-	PUSH	CGDT.cs64
+	// Switch over to target task's stack;
+	// prepare flags & RIP to pop
+	MOV RSP, U64 CTask.rsp[RSI]
 	PUSH	U64 CTask.rip[RSI]
+	PUSH	U64 CTask.rflags[RSI]
+	MOV	RAX,U64 CTask.rax[RSI]
+
+	// Switch over to tasks' stack
 	MOV	RSI,U64 CTask.rsi[RSI]
-	IRET
+	POPFD
+	RET
 //************************************
 END_RSI_TASK:
 	MOV	RAX,RSI
@@ -154,7 +157,6 @@ _TASK_END_NOW::
 	JMP	I8 RESTORE_RSI_TASK
 
 _YIELD::
-	RET
 	PUSHFD
 	TEST	U8 [SYS_SEMAS+SEMA_SINGLE_USER*DFT_CACHE_LINE_WIDTH],1
 	JZ	@@05

@@ -242,7 +242,7 @@ U0 VKMain2()
   KbdMsInit;
   MsInit;
   //KbdInit;
-  Spawn(&MsHardDrvrInstall);
+  //Spawn(&MsHardDrvrInstall);
 
   "Loading Compiler\n";
   Cd("/Compiler");
