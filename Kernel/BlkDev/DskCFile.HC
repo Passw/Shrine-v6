@@ -1,3 +1,6 @@
+U8* iso_c_glb;
+I64 glb_nref = 0;
+
 I64 FSize(CFile *f)
 {//Report size of opened file in bytes.
   if (f)
@@ -36,6 +39,26 @@ CFile *FOpen(U8 *filename,U8 *flags,I64 cnt=0)
     f->flags=f->flags|FF_WRITE|FF_NEEDS_WRITE;
     if (StrOcc(flags,'+')) {
       if (FileFind(full_name,&f->de,FUF_JUST_FILES)) {
+	if (f->dv->fs_type==FSt_HOSTFS) {
+	  //RawPrint(0, "FOpen HostFS Exists(%s, %s, %d, %d blks)\n", full_name, flags, f->de.size, cnt);
+	  Free(f->clus_buf);
+	  if (StrFind(".ISO.C", filename)) {
+	    if (iso_c_glb) {
+	      f->clus_buf = iso_c_glb;
+        f->de.size = MSize(f->clus_buf);
+	    }
+	    else {
+	      f->clus_buf = MAlloc(f->de.size);
+	      VSysCall(VSYSCALL_FREAD, full_name + 2, f->clus_buf, f->de.size);
+	      iso_c_glb = f->clus_buf;
+	    }
+	    glb_nref++;
+	  }
+	  else {
+	    f->clus_buf = MAlloc(f->de.size);
+	    VSysCall(VSYSCALL_FREAD, full_name + 2, f->clus_buf, f->de.size);
+	  }
+	}
 	Free(full_name);
 	if (contiguous)
 	  f->max_blk=(FSize(f)+BLK_SIZE-1)>>BLK_SIZE_BITS-1;
@@ -54,10 +77,28 @@ CFile *FOpen(U8 *filename,U8 *flags,I64 cnt=0)
 	DirNew(dirc->dv,Fs->cur_dir,&f->de,TRUE);
 	f->flags&=~FF_NEW_FILE;
       }
-      if (cnt>0 && f->dv->fs_type==FSt_HOSTFS) {
+      if (f->dv->fs_type==FSt_HOSTFS) {
+      	//RawPrint(0, "FOpen HostFS New(%s, %s, %d blks)\n", full_name, flags, cnt);
 	// We also pre-alloc the whole thing, IN MEMORY!
 	Free(f->clus_buf);
-	f->clus_buf = MAlloc(cnt<<BLK_SIZE_BITS);
+	if (StrFind(".ISO.C", filename)) {
+	  if (iso_c_glb) {
+      // this is a hack because in our pile of hacks the ISO.C being open late in
+      // the build process still doesn't exist in the view of FindFIle, although
+      // it has been already FOpened
+	    f->clus_buf = iso_c_glb;
+      cnt = MSize(f->clus_buf)>>BLK_SIZE_BITS;
+	  }
+	  else {
+	    f->clus_buf = MAlloc(cnt<<BLK_SIZE_BITS);
+	    iso_c_glb = f->clus_buf;
+	  }
+	  glb_nref++;
+	}
+	else
+	  f->clus_buf = MAlloc(cnt<<BLK_SIZE_BITS);
+	f->de.size=cnt<<BLK_SIZE_BITS;
+	f->flags&=~FF_NEW_FILE;
       }
       DirContextDel(dirc);
       return f;
@@ -66,9 +107,24 @@ CFile *FOpen(U8 *filename,U8 *flags,I64 cnt=0)
     if (FileFind(full_name,&f->de,FUF_JUST_FILES)) {
       if (f->dv->fs_type==FSt_HOSTFS) {
 	// HostFS needs to remember full path
+	//"FOpen HostFS Read(%s, %s)\n", full_name, flags;
 	f->de.full_name = StrNew(full_name);
 	Free(f->clus_buf);
-	f->clus_buf = FileRead(full_name);
+	if (StrFind(".ISO.C", filename)) {
+	  if (iso_c_glb) {
+	    f->clus_buf = iso_c_glb;
+	  }
+	  else {
+	    f->clus_buf = MAlloc(f->de.size);
+	    VSysCall(VSYSCALL_FREAD, full_name + 2, f->clus_buf, f->de.size);
+	    iso_c_glb = f->clus_buf;
+	  }
+	  glb_nref++;
+	}
+	else {
+	  f->clus_buf = MAlloc(f->de.size);
+	  VSysCall(VSYSCALL_FREAD, full_name + 2, f->clus_buf, f->de.size);
+	}
       }
       Free(full_name);
       f->max_blk=(FSize(f)+BLK_SIZE-1)>>BLK_SIZE_BITS-1;
@@ -86,9 +142,19 @@ U0 FClose(CFile *f)
   CDirContext *dirc;
   if (f) {
     if (f->dv->fs_type==FSt_HOSTFS) {
-      if (f->flags & FF_WRITE)
-	FileWrite(f->de.full_name, f->clus_buf, f->de.size);
-      Free(f->clus_buf);
+      if (f->flags & FF_WRITE) {
+      	//RawPrint(0, "FClose HostFS (%s, %p, %d, %d)\n", f->de.full_name, f->clus_buf, f->de.size, f->max_blk);
+	//FileWrite(f->de.full_name, f->clus_buf, f->de.size);
+  	VSysCall(VSYSCALL_FWRITE, f->de.full_name + 2, f->clus_buf, f->de.size);
+      }
+      if (iso_c_glb == f->clus_buf) {
+      	if (--glb_nref = 0) {
+      	  Free(iso_c_glb);
+      	  iso_c_glb = NULL;
+      	}
+      }
+      else
+	Free(f->clus_buf);
       Free(f->de.full_name);
       Free(f);
       return;
@@ -119,6 +185,8 @@ I64 FSetClus(CFile *f,I64 c,I64 blk,Bool read)
 {
   CDrv *dv=f->dv;
   I64 i;
+  if (f->dv->fs_type==FSt_HOSTFS)
+    throw('Clus');
   if (f->clus!=c) {
     if (f->flags & FF_BUF_DIRTY) {
       i=dv->spc;
@@ -225,9 +293,17 @@ Bool FBlkWrite(CFile *f,U8 *buf,I64 blk=FFB_NEXT_BLK,I64 cnt=1)
     // nice shit LOL
     // FIXME eventually
     // "HostFS FBlkWrite(%s at %d x %d, out of %d)\n", f->de.full_name, blk, cnt, f->max_blk+1;
+    if (MSize(f->clus_buf)<(blk+cnt)<<BLK_SIZE_BITS) {
+      U8* newbuf = MAlloc((blk+cnt)<<BLK_SIZE_BITS);
+      MemCpy(newbuf, f->clus_buf, MSize(f->clus_buf));
+      Free(f->clus_buf);
+      f->clus_buf = newbuf;
+    }
     MemCpy(f->clus_buf+blk<<BLK_SIZE_BITS,buf, cnt<<BLK_SIZE_BITS);
 
     blk+=cnt;
+    if (f->de.size<blk<<BLK_SIZE_BITS)
+      f->de.size=blk<<BLK_SIZE_BITS;
     f->fblk_num=blk;
     return TRUE;
   }

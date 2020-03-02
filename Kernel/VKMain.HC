@@ -156,10 +156,12 @@ U0 VKMain()
   mem_boot_base = 0x107c20;
   CBinFile *bfh=mem_boot_base-sizeof(CBinFile);
   sys_boot_patch_table_base = mem_boot_base-sizeof(CBinFile)+bfh->patch_table_offset;
+  mem_mapped_space = VSysCall(VSYSCALL_MEMSIZE, 0, 0, 0); // may not be entirely correct ?
 
   // KStart32
 
   sys_code_bp = &(SYS_FIXED_AREA(CSysFixedArea*))->sys_code_bp;
+  sys_code_bp->alloced_u8s = mem_mapped_space;   // coorect? incorrect? who knows?
 
   LBts(&sys_run_level,RLf_PATCHED); // TODO explain
 
@@ -216,7 +218,7 @@ U0 VKMain2()
     StreamPrint("HomeSet(\"%s\");\n"
 	  "blkdev.ins_base0=%d;blkdev.ins_base1=%d;blkdev.ins_unit =%d;\n",
 	  kernel_cfg->home_dir,
-	  blkdev.ins_base0,blkdev.ins_base1,blkdev.ins_unit);
+	  368, 0, 0/*blkdev.ins_base0,blkdev.ins_base1,blkdev.ins_unit*/);
   }
   Gs->idle_task->cur_dv=blkdev.let_to_drv[*blkdev.home_dir-'A'];
   DrvRep;

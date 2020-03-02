@@ -162,6 +162,11 @@ Bool ATAPIStartStop(CBlkDev *bd,F64 timeout,Bool start)
 
 I64 ATAGetDevId(CBlkDev *bd,F64 timeout,Bool keep_id_record)
 {
+  if (bd->base1 == 0x1f0)
+    return BDT_ATA;
+  else
+    return BDT_ATAPI;
+  /*
   I64 res=BDT_NULL;
   U16 *id_record=NULL;
   if (bd->type!=BDT_ATAPI && bd->base1)
@@ -189,6 +194,7 @@ I64 ATAGetDevId(CBlkDev *bd,F64 timeout,Bool keep_id_record)
      bd->dev_id_record=id_record;
   }
   return res;
+  */
 }
 
 I64 ATAReadNativeMax(CBlkDev *bd,F64 timeout)

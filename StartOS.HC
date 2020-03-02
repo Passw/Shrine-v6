@@ -16,9 +16,7 @@ Option(OPTf_WARN_DUP_TYPES,ON);
 HashTablePurge(adam_task->hash_table);
 
 #include "/Adam/MakeAdam"
-Cmp("/Compiler/Compiler",,"/Compiler/Compiler.BIN.C",':');
-Cmp("/Kernel/VKernel",,"/Kernel/VKernel.BIN.C",':');
-/*
+
 //Dbg("Type 'G;'");
 DocTermNew;
 WinVert(2,10);
@@ -46,4 +44,3 @@ LBts(&sys_run_level,RLf_HOME);
 #include "~/MakeHome"
 
 //After this file, the Adam task enters $LK,"server mode",A="HI:Job"$.
-*/

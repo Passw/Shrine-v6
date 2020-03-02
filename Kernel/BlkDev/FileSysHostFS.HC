@@ -5,7 +5,7 @@ U0 HostFsDirEntryInit(CDirEntry* de, CHostFsStat* st)
   // de->full_name = NULL;
   // de->user_data = de->user_data2 = 0;
 
-  de->attr = st->attr;
+  de->attr = FileAttr(st->name, st->attr);
   StrCpy(de->name, st->name);   // FIXME: bounds etc
   de->clus = st->clus;
   de->size = st->size;
@@ -59,7 +59,7 @@ Bool HostFsFileFind(CDrv *dv,I64 cur_dir_clus,U8 *name,
     if (abs_path && VSysCall(VSYSCALL_STAT, abs_path, &stat, 0) == 0) {
       if (!(fuf_flags&FUF_JUST_DIRS && !(stat.attr & RS_ATTR_DIR)) &&
           !(fuf_flags&FUF_JUST_FILES && stat.attr & RS_ATTR_DIR)) {
-        _res->attr=stat.attr;
+        _res->attr=FileAttr(stat.name, stat.attr);
         StrCpy(_res->name, name);   // FIXME: bounds etc
         _res->clus=stat.clus;
         _res->size=stat.size;
@@ -100,7 +100,7 @@ U8 *HostFsFileRead(CDrv *dv,U8 *cur_dir,U8 *filename,I64 *_size,I64 *_attr)
     if (VSysCall(VSYSCALL_STAT, path, &stat, 0) == 0) {
       buf = MAlloc(stat.size+1);
       *_size = VSysCall(VSYSCALL_FREAD, path, buf, stat.size);
-      *_attr = stat.attr;
+      *_attr=FileAttr(stat.name,stat.attr);
       buf[*_size] = 0;
     }
 

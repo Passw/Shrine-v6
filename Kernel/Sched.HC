@@ -135,14 +135,13 @@ _TASK_CONTEXT_RESTORE::
 	POP	R15
 	MOV	RSP,RAX
 
-	// Switch over to target task's stack;
-	// prepare flags & RIP to pop
-	MOV RSP, U64 CTask.rsp[RSI]
-	PUSH	U64 CTask.rip[RSI]
-	PUSH	U64 CTask.rflags[RSI]
 	MOV	RAX,U64 CTask.rax[RSI]
 
-	// Switch over to tasks' stack
+	// Switch over to target task's stack;
+	// prepare flags & RIP to pop
+	MOV	RSP,U64 CTask.rsp[RSI]
+	PUSH	U64 CTask.rip[RSI]
+	PUSH	U64 CTask.rflags[RSI]
 	MOV	RSI,U64 CTask.rsi[RSI]
 	POPFD
 	RET
