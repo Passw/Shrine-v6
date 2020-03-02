@@ -17,6 +17,10 @@
 #include "VKStart64"
 #include "VSysCall"
 #include "VKernel.HH"
+#exe {Option(OPTf_EXTERNS_TO_IMPORTS,ON);};
+public extern U32 __host_GetApiVersion();
+public extern U8* __host_GetEnv(U8* name);
+#exe {Option(OPTf_EXTERNS_TO_IMPORTS,OFF);};
 #include "KMathA"
 #include "KUtils"
 #exe {Option(OPTf_KEEP_PRIVATE,ON);};

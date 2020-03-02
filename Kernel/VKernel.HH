@@ -1,3 +1,5 @@
+// TODO replace syscalls with Host.HH
+
 #define VSYSCALL_MEMSIZE    1
 #define VSYSCALL_SETFS      2
 #define VSYSCALL_SETGS      3

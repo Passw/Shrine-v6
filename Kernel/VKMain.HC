@@ -193,11 +193,18 @@ U0 VKMain2()
   Core0Init;
   //IntInit1;
 
+  U32 host_api_version = __host_GetApiVersion();
+
   //Before this point use $LK,"Snd",A="MN:Snd"$() and $LK,"Busy",A="MN:Busy"$()
   //to debug.  After this point, use $LK,"RawPrint",A="MN:RawPrint"$()
   LBts(&sys_run_level,RLf_RAW);
-  "TempleOS V%5.3f\t%D %T\n\n",
-	sys_os_version,sys_compile_time,sys_compile_time;
+  "TempleOS V%5.3f\t%D %T\tHost API %d.%d\n\n",
+	sys_os_version,sys_compile_time,sys_compile_time,
+  host_api_version >> 16, host_api_version & 0xffff;
+
+  if (host_api_version < 0x10000 || host_api_version > 0x1ffff) {
+    Panic("Host API version 1.0+ required");
+  }
 
   //TimersInit;
   //if (BIOSTotalMem<ToI64(0.95*MEM_MIN_MEG*0x100000))
@@ -246,15 +253,28 @@ U0 VKMain2()
   //KbdInit;
   //Spawn(&MsHardDrvrInstall);
 
-  "Loading Compiler\n";
+  U8* compiler_path = __host_GetEnv("COMPILER");
+
+  if (!compiler_path) {
+    compiler_path = "Compiler";
+  }
+
+  "Loading %s\n", compiler_path;
   Cd("/Compiler");
-  Load("Compiler",LDF_SILENT);
+  Load(compiler_path,LDF_SILENT);
   LBts(&sys_run_level,RLf_COMPILER);
 
   DbgMode(OFF);
   cnts.time_stamp_freq_initial=TimeCal;
   Cd("/");
-  try ExeFile("StartOS"); //Continues $LK,"/StartOS.HC",A="FL:/StartOS.HC,1"$
+
+  U8* startos_path = __host_GetEnv("STARTOS");
+
+  if (!startos_path) {
+    startos_path = "StartOS";
+  }
+
+  try ExeFile(startos_path); //Continues $LK,"/StartOS.HC",A="FL:/StartOS.HC,1"$
   catch {
     Raw(ON);
     Silent(OFF);
