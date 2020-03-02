@@ -301,17 +301,17 @@ U0 RawDr(CTask *task=NULL)
 
   for (i=0;i<16;i++) {
     text.raw_col=i*text.cols+RAWDR_COL;
-    "º%3Z:%016X\n",i,"ST_U64_REGS",*TaskRegAddr(task,i);
+    "ï¿½%3Z:%016X\n",i,"ST_U64_REGS",*TaskRegAddr(task,i);
   }
 
   text.raw_col=i++*text.cols+RAWDR_COL;
-  "ºRIP:%016X\n",task->rip;
+  "ï¿½RIP:%016X\n",task->rip;
 
   text.raw_col=i++*text.cols+RAWDR_COL;
-  "º%-*tp\n",text.cols-(RAWDR_COL+1)-1,Fs->rip;
+  "ï¿½%-*tp\n",text.cols-(RAWDR_COL+1)-1,Fs->rip;
 
   text.raw_col=i++*text.cols+RAWDR_COL;
-  'º';
+  'ï¿½';
   if (Bt(&sys_run_level,RLf_COMPILER)) {
     j=Fs->rip;
     Ui(buf,&j,,,TRUE);
@@ -320,9 +320,9 @@ U0 RawDr(CTask *task=NULL)
     '\n';
 
   text.raw_col=i*text.cols+RAWDR_COL;
-  'È';
+  'ï¿½';
   for (j=0;j<text.cols-RAWDR_COL-1;j++)
-    'Í';
+    'ï¿½';
 
   text.raw_col=old_col;
   Raw(old_raw);
@@ -640,13 +640,9 @@ U0 Fault2(I64 fault_num,I64 fault_err_code)
 
 U0 Panic(U8 *msg=NULL,I64 msg_num=0,Bool panic=TRUE)
 {//Enter the debugger with panic?
-  PUSHFD
-  CLI
-  dbg.msg=msg;
-  dbg.msg_num=msg_num;
-  dbg.panic=panic;
+  Raw(ON);
+  "Panic: %s / %08X\n", msg, msg_num;
   INT I_DBG
-  POPFD
 }
 
 U0 Dbg(U8 *msg=NULL,I64 msg_num=0)
